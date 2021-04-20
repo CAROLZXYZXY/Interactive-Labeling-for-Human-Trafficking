@@ -1,14 +1,11 @@
 import altair as alt
+import datetime
+import numpy as np
 import nx_altair as nxa
 import pandas as pd
-import numpy as np
-
-from datetime import timedelta
 
 from itertools import chain, product
 from vega_datasets import data
-
-import streamlit as st
 
 import utils
 
@@ -138,7 +135,7 @@ def strip_plot(df, y, facet, tooltip):
         :param tooltip: list of DataFrame columns to include in tooltip
         :return:        altair strip plot '''
 
-    delta = timedelta(days=1)
+    delta = datetime.timedelta(days=1)
     date_range = np.arange(min(df.days) - delta, max(df.days) + 2*delta, delta)
     facet_s = facet.split(':')[0]
 
