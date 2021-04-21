@@ -13,8 +13,8 @@ def gen_page_content(state, df):
     with last_col:
         if st.button('View next cluster'):
             try:
-                state.cluster = next(state.gen_clusters)
-                state.index += 1
+                state.index, state.cluster = next(state.gen_clusters)
+                #utils.write_labels(state)
             except StopIteration:
                 state.is_stop = True
 
@@ -97,7 +97,7 @@ state_params = {
     'gen_clusters': None
 }
 state = SessionState.get(**state_params)
-default_file_path = '../tiny-RANDOM.csv'
+default_file_path = '../data/aht_data/aggregate_data/aggregate_LSH_labels.csv'
 file_path = st.text_input("Please specify the path of input file")
 
 try:

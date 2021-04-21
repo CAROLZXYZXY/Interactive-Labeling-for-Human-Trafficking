@@ -127,7 +127,7 @@ def bubble_chart(df, y, facet, tooltip):
     )
 
 
-def strip_plot(df, y, facet, tooltip):
+def strip_plot(df, y, facet, tooltip, color_zeros=False):
     ''' create strip plot with heatmap
         :param df:      Pandas DataFrame to display
         :param y:       column of DataFrame to use for bubble size
@@ -140,17 +140,11 @@ def strip_plot(df, y, facet, tooltip):
     facet_s = facet.split(':')[0]
 
     label = df[facet_s].values[0]
-    mini_df = pd.DataFrame([{'days': d, y: 0, facet_s: label} for d in date_range if d not in df.days.unique()])
+    if color_zeros:
+        mini_df = pd.DataFrame([{'days': d, y: 0, facet_s: label} for d in date_range[1:-1] if d not in df.days.unique()])
+        df = pd.concat([df, mini_df])
 
-    big_df = pd.concat([df, mini_df])
-
-    return alt.Chart(big_df).mark_tick(binSpacing=0, thickness=6).transform_impute(
-        impute=y,
-        key='days',
-        value=0,
-        keyvals = date_range,
-        groupby=[facet_s]
-    ).encode(
+    chart = alt.Chart(df).mark_tick(binSpacing=0, thickness=6).encode(
         x=alt.X('days:T', axis=alt.Axis(grid=False), scale=alt.Scale(domain=[min(date_range), max(date_range)])),
         y=alt.Y(facet, axis=alt.Axis(grid=False, labels=True), title=None),
         color=alt.Color(y, scale=alt.Scale(scheme='purplered', type='sqrt')),
@@ -170,10 +164,25 @@ def strip_plot(df, y, facet, tooltip):
         labelAngle=-15
     )
 
+    if color_zeros:
+        chart = chart.transform_impute(
+        impute=y,
+        key='days',
+        value=0,
+        keyvals = date_range,
+        groupby=[facet_s]
+    )
+
+    return chart
+
 
 def labeling_buttons(title):
+    ''' create buttons for labeling
+        :param title:   label name for displaying as plot title
+        :return:        altair plot with 5 shapes for labeling '''
     colors = ('#33cc33', '#ace600', '#e6e600', '#ff9900', '#ff3300')
-    data = pd.DataFrame([{'id': i, 'color': c} for i, c in enumerate(colors)])
+    tooltip = ('1: Unlikely', '2: Somewhat Unlikely', '3: Unsure', '4: Somewhat Likely', '5: Likely')
+    data = pd.DataFrame([{'id': i, 'color': c, 'label': l} for i, (c, l) in enumerate(zip(colors, tooltip))])
     brush = alt.selection_single(nearest=True, empty='none', fields=['id'])
 
     return alt.Chart(data).mark_point(
@@ -185,7 +194,8 @@ def labeling_buttons(title):
         color=alt.condition(
             alt.datum.id <= brush.id,
             alt.Color('color:N', scale=None),
-            alt.value('skyblue'))
+            alt.value('skyblue')),
+        tooltip=['label']
     ).properties(
         width=400,
         height=100,
