@@ -13,8 +13,8 @@ def gen_page_content(state, df):
     with last_col:
         if st.button('View next cluster'):
             try:
-                state.cluster = next(state.gen_clusters)
-                state.index += 1
+                state.index, state.cluster = next(state.gen_clusters)
+                #utils.write_labels(state)
             except StopIteration:
                 state.is_stop = True
 
@@ -99,7 +99,7 @@ state_params = {
 state = SessionState.get(**state_params)
 
 with st.spinner('Processing data...'):
-    filename = '../tiny-RANDOM.csv'
+    filename = '../data/aht_data/aggregate_data/aggregate_LSH_labels.csv'
     columns = ['phone', 'email', 'social', 'image_id']
     df = utils.read_csv(filename)
 

@@ -7,6 +7,8 @@ import pickle as pkl
 import streamlit as st
 import types
 
+from collections import defaultdict
+
 from annotated_text import annotated_text
 
 
@@ -272,7 +274,7 @@ def cluster_feature_extract(df, cluster_label='LSH label', date_col='date_posted
 
 
 ### Graph related utils
-@st.cache#(show_spinner=False)
+#@st.cache#(show_spinner=False)
 def construct_metaclusters(filename, df, cols, cluster_label='LSH label'):
     ''' construct metadata graph from dataframe already split into clusters
     :param df:              pandas dataframe containing ad info
@@ -294,7 +296,7 @@ def construct_metaclusters(filename, df, cols, cluster_label='LSH label'):
         metadata_graph.add_node(cluster_id, num_ads=len(cluster_df))
         
         for name in cols:
-            metadata_graph.nodes[cluster_id][name] = extract_field(cluster_df, name)
+            metadata_graph.nodes[cluster_id][name] = extract_field(cluster_df[name])
             
             for elem in metadata_graph.nodes[cluster_id][name]:
                 edges = [(cluster_id, node) for node in metadata_dict[elem]]
@@ -305,16 +307,21 @@ def construct_metaclusters(filename, df, cols, cluster_label='LSH label'):
     return metadata_graph
 
 
-@st.cache(hash_funcs={types.GeneratorType: id}, show_spinner=False)
+#@st.cache(hash_funcs={types.GeneratorType: id})#, show_spinner=False)
 def gen_ccs(graph):
     ''' return generator for connected components, sorted by size
         :param graph:   nx Graph 
         :return         generator of connected components '''
 
-    components = sorted(nx.connected_components(graph), reverse=True, key=len)
+    #components = sorted(nx.connected_components(graph), reverse=True, key=len)
+    components = nx.connected_components(graph)
+    index = 0
     for component in components:
+        if len(component) < 5:
+            continue
         print('# clusters', len(component))
-        yield component
+        yield index, component
+        index += 1
 
 
 ### Text annotation utils
@@ -373,3 +380,18 @@ def get_template_text(template, ads, i):
             to_write.append((token, curr_type, color))
 
     return to_write
+
+
+#def write_labels(filename, meta_cluster_label, cluster_labels, labels):
+#    label_filename = '{}-meta-labels.csv'.format(filename)
+#    if os.path.exists(label_filename):
+#        label_df = read_csv('{}-meta-labels.csv'.format(filename))
+#    else:
+#        label_df = pd.DataFrame(columns=['meta_cluster_label', 'cluster_labels'] + labels.keys()))
+#
+#    # add new row
+#    row = pd.Series([meta_cluster_label, np.array(cluster_labels)] + labels.values())
+#
+#    label_df = label_df.append(row)
+#
+#    label_df.to_csv(label_filename, index=False)
